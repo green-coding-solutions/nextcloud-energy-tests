@@ -1,0 +1,27 @@
+---
+name: Nextcloud - MariaDB - Install - Firefox
+author: Arne Tarara <arne@green-coding.io>
+description: Installs the official Nextcloud image with a MariaDB.
+compose-file: !include compose-mariadb.yml
+
+services:
+  gcb-playwright:
+    image: greencoding/gcb_playwright:v12
+    depends_on:
+      nc:
+        condition: service_healthy
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix # for debugging in non-headless mode
+    environment:
+       DISPLAY: ":1" # for debugging in non-headless mode
+
+flow:
+  - name: Install Nextcloud
+    container: gcb-playwright
+    commands:
+      - type: console
+        command: python3 /tmp/repo/energy-tests/nextcloud_install.py firefox
+        note: Installing Nextcloud
+        read-notes-stdout: true
+        log-stdout: true
+        log-stderr: true
