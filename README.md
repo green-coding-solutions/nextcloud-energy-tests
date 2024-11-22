@@ -8,6 +8,8 @@ We evaluate the two browsers Chromium and Firefox. Also the three databases Mari
 
 ## Install nextcloud beforehand with defaults
 
+Please note that this scenario should be run with 3600s idle and 3600s baseline durations
+
 ```bash
 python3 runner.py --uri ~/Sites/green-coding/nextcloud-energy-tests --filename usage_scenario-mariadb-install-firefox.yml --dev-no-optimizations --allow-unsafe --name "Nextcloud Blue Angel - Install"
 ```
@@ -17,9 +19,16 @@ This will install nextcloud with the defaull apps. Currently:
 - Contacts
 - Mail
 - Document editor
-- Talk
+- Talk (Video conference & Instant Messaging)
 
 All changes are saved in the docker volumes for *Apache* webserver and the *MariaDB* database.
+
+## Preparation of installed Nextcloud
+
+Nextcloud by default has a cronjob that will trigger in parallel with web requests.
+
+This must be deactived in the Admin Dashboard under *Basic Settings*. Setting it to cron will effectively 
+deactivate it if no cron job is set to trigger the *.php* file afterwards.
 
 ## Execution of the tests for the Blue Angel certification
 
@@ -31,6 +40,9 @@ First prepare the system to allow firefox window to open from inside docker
 export DISPLAY=:0
 xhost +local:docker # might also need to be done on the machine directly. Not only via ssh
 ```
+
+Also configure GMT to use 60s pre-test sleep time. Idle should be at 120 s to make container energy estimation work.
+Baseline can be at 0.
 
 Then execute the scenarios via GMT
 ```bash
@@ -54,11 +66,11 @@ The cases are:
   + TODO
 - Video:
   + TODO
-  + Login as admin and create a calendar event and validate that it is visible.
 - Docs:
   + Login as admin and create a second user.
   + Login as admin and create a text document and then share it with second user
   + Login as both users, open the text document and edit it, making sure the other user sees the text entered
+  + Delete the document and the new user after
 - Talk:
   + Login as admin and create a group chat, allowing guests to join via link
   + Open the group conversation link in 5 browsers as guests
