@@ -3,56 +3,63 @@ import random
 import re
 import string
 import sys
-from time import sleep, time_ns
 import signal
 
 from playwright.sync_api import Playwright, sync_playwright
 
-from helpers.helper_functions import log_note, get_random_text, login_nextcloud, close_modal, timeout_handler
+from helpers.helper_functions import log_note, get_random_text, login_nextcloud, close_modal, timeout_handler, user_sleep
 
 DOMAIN = 'https://ncs'
-#DOMAIN = 'http://localhost:8080'
 
-
-def run(playwright: Playwright, browser_name: str, headless=False) -> None:
+def run(playwright: Playwright, browser_name: str) -> None:
     log_note(f"Launch browser {browser_name}")
     if browser_name == "firefox":
-        browser = playwright.firefox.launch(headless=headless)
+        browser = playwright.firefox.launch(headless=False)
     else:
-        # this leverages new headless mode by Chromium: https://developer.chrome.com/articles/new-headless/
-        # The mode is however ~40% slower: https://github.com/microsoft/playwright/issues/21216
-        browser = playwright.chromium.launch(headless=headless,args=["--headless=new"])
+        browser = playwright.chromium.launch(headless=False)
     context = browser.new_context(ignore_https_errors=True)
     page = context.new_page()
     try:
-        log_note("Login")
-        page.goto(DOMAIN)
+        log_note("Opening login page")
+        page.goto(f"{DOMAIN}/login")
+
+        log_note("Logging in")
         login_nextcloud(page, domain=DOMAIN)
-        #close_modal(page)
+        user_sleep()
+
+        # Wait for the modal to load. As it seems you can't close it while it is showing the opening animation.
+        log_note("Close first-time run popup")
+        close_modal(page)
 
         log_note("Create new text file")
         page.get_by_role("link", name="Files").click()
         page.get_by_role("button", name="New", exact=True).click()
         page.click("button[role='menuitem']:has-text('New text file')")
 
-        file_name = "File " + ''.join(random.choices(string.ascii_letters, k=5)) + '.md'
+        file_name = 'Collaborative_doc.md'
         page.get_by_placeholder('Filename', exact=True).fill(file_name)
         page.locator('.dialog__actions').get_by_role("button", name="Create").click()
         page.locator('.templates-picker__buttons').get_by_role("button", name="Create").click()
+        user_sleep()
 
-        log_note("Share file with other user")
-
+        log_note("Share file with other user - Open context menu")
         modal_header = page.get_by_role("heading", name=re.compile(rf"\b{re.escape(file_name)}\b"))
         modal = modal_header.locator("..")
         actions_button = modal.locator("button.action-item__menutoggle[aria-label='Actions']")
         actions_button.click()
+        user_sleep()
 
+        log_note('Open sharing menu')
         page.get_by_role("menuitem", name="Open sidebar").click()
         page.get_by_role("tab", name="Sharing").click()
+        user_sleep()
 
+        log_note('Sharing with docs_dude user')
         page.get_by_placeholder("Name, email, or Federated Cloud ID").fill("docs")
         page.get_by_text("docs_dude").first.click()
         page.get_by_text("Save Share").first.click()
+        user_sleep()
+
 
         log_note("Close browser")
         page.close()

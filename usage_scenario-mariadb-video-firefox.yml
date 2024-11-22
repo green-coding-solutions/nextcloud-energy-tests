@@ -1,7 +1,7 @@
 ---
-name: Nextcloud - MariaDB - Install - Firefox
-author: Arne Tarara <arne@green-coding.io>
-description: Installs the official Nextcloud image with a MariaDB.
+name: Nextcloud - MariaDB - Video - Firefox
+author: Didi Hoffmann <didi@green-coding.io>
+description: Video-Konferenz mit Nextcloud Talk app. Zuerst wird ein Call von einem Browser gestartet und ein Sharing-Link erstellt. Danach kommen zwei Teilnehmer in den Anruf. Die Videokonferenz wird via Firefox mit einem Farbwechsel-Demo-Video und einem Rauschen als Audio simuliert.
 compose-file: !include compose-mariadb.yml
 
 services:
@@ -17,12 +17,11 @@ services:
 
 
 flow:
-  - name: Install Nextcloud
+  - name: Video Conference
     container: gcb-playwright
     commands:
       - type: console
-        command: python3 /tmp/repo/nextcloud_install.py firefox
-        note: Installing Nextcloud
+        command: python3 /tmp/repo/nextcloud_video.py firefox
         read-notes-stdout: true
         log-stdout: true
         log-stderr: true

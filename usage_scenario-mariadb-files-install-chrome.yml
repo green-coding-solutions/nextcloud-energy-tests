@@ -1,0 +1,48 @@
+---
+name: Nextcloud - MariaDB - Files - Firefox
+author: Didi Hoffmann <didi@green-coding.io>
+description: Nextcloud login über das Web Interface. Erstellen einer neuen Datei. Erstellen eines Sharing Link für die Datei mit 1 MB. Teilen der Datei und Download mit einem anderen Browser.
+compose-file: !include compose-mariadb.yml
+
+services:
+  gcb-playwright:
+    image: greencoding/gcb_playwright:v14
+    depends_on:
+      nc:
+        condition: service_healthy
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix # for debugging in non-headless mode
+    environment:
+       DISPLAY: ":0" # for debugging in non-headless mode
+    log-stderr: true
+    log-stdout: true
+  db:
+    log-stderr: true
+    log-stdout: true
+  nc:
+    log-stderr: true
+    log-stdout: true
+  ncs:
+    log-stderr: true
+    log-stdout: true
+
+flow:
+  - name: Install Nextcloud
+    container: gcb-playwright
+    commands:
+      - type: console
+        command: python3 /tmp/repo/nextcloud_install.py chromium
+        note: Installing Nextcloud
+        read-notes-stdout: true
+        log-stdout: true
+        log-stderr: true
+  - name: Calendar
+    container: gcb-playwright
+    commands:
+      - type: console
+        command: python3 /tmp/repo/nextcloud_files.py chromium
+        note: Creating event
+        read-notes-stdout: true
+        read-sci-stdout: true
+        log-stdout: true
+        log-stderr: true

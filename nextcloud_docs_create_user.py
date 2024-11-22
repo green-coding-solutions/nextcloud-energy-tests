@@ -1,37 +1,47 @@
 import sys
 import contextlib
-from time import time_ns, sleep
 import signal
 
 from playwright.sync_api import Playwright, sync_playwright
 
-from helpers.helper_functions import log_note, get_random_text, login_nextcloud, close_modal, timeout_handler
+from helpers.helper_functions import log_note, get_random_text, login_nextcloud, close_modal, timeout_handler, user_sleep
 
-def create_user(playwright: Playwright, browser_name: str, username: str, password: str, email: str, headless=False) -> None:
+DOMAIN = 'https://ncs'
+
+def create_user(playwright: Playwright, browser_name: str, username: str, password: str, email: str) -> None:
     log_note(f"Launch browser {browser_name}")
     if browser_name == "firefox":
-        browser = playwright.firefox.launch(headless=headless)
+        browser = playwright.firefox.launch(headless=False)
     else:
-        # this leverages new headless mode by Chromium: https://developer.chrome.com/articles/new-headless/
-        # The mode is however ~40% slower: https://github.com/microsoft/playwright/issues/21216
-        browser = playwright.chromium.launch(headless=headless,args=["--headless=new"])
+        browser = playwright.chromium.launch(headless=False)
     context = browser.new_context(ignore_https_errors=True)
     try:
         page = context.new_page()
-        log_note("Login")
-        login_nextcloud(page)
 
-        log_note("Wait for welcome popup")
-        #close_modal(page)
+        log_note("Opening login page")
+        page.goto(f"{DOMAIN}/login")
 
-        log_note("Create user")
+        log_note("Logging in")
+        login_nextcloud(page, domain=DOMAIN)
+        user_sleep()
+
+        # Wait for the modal to load. As it seems you can't close it while it is showing the opening animation.
+        log_note("Close first-time run popup")
+        close_modal(page)
+
+        log_note("Opening create user menu")
         page.click("button[aria-label='Settings menu']")
         page.click("#core_users")
+        user_sleep()
+
+        log_note('Adding new user')
         page.get_by_role("button", name="New Account").click()
         page.get_by_placeholder("Account name (required)", exact=True).fill(username)
         page.get_by_placeholder("Password (required)", exact=True).fill(password)
         #page.get_by_placeholder("Email", exact=True).fill(email)
         page.get_by_role("button", name="Add new account").click()
+        user_sleep()
+
         log_note("Close browser")
 
         # ---------------------

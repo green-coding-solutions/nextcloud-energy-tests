@@ -2,38 +2,38 @@ import contextlib
 import random
 import string
 import sys
-from time import time_ns, sleep
 import signal
 
 from playwright.sync_api import Playwright, sync_playwright, expect
 
-from helpers.helper_functions import log_note, get_random_text, login_nextcloud, close_modal, timeout_handler
+from helpers.helper_functions import log_note, get_random_text, login_nextcloud, close_modal, timeout_handler, user_sleep
 
 DOMAIN = 'https://ncs'
-#DOMAIN = 'http://localhost:8080'
-SLEEP_TIME = 1
 
-def run(playwright: Playwright, browser_name: str, headless=False) -> None:
+def run(playwright: Playwright, browser_name: str) -> None:
     log_note(f"Launch browser {browser_name}")
     if browser_name == "firefox":
-        browser = playwright.firefox.launch(headless=headless)
+        browser = playwright.firefox.launch(headless=False)
     else:
-        # this leverages new headless mode by Chromium: https://developer.chrome.com/articles/new-headless/
-        # The mode is however ~40% slower: https://github.com/microsoft/playwright/issues/21216
-        browser = playwright.chromium.launch(headless=headless,args=["--headless=new"])
+        browser = playwright.chromium.launch(headless=False)
     context = browser.new_context(ignore_https_errors=True)
     page = context.new_page()
 
     try:
+        log_note("Opening login page")
         page.goto(f"{DOMAIN}/login")
-        log_note("Login")
-        login_nextcloud(page, domain=DOMAIN)
 
-        log_note("Wait for welcome popup")
+        log_note("Logging in")
+        login_nextcloud(page, domain=DOMAIN)
+        user_sleep()
+
+        # Wait for the modal to load. As it seems you can't close it while it is showing the opening animation.
+        log_note("Close first-time run popup")
         close_modal(page)
 
-        log_note("Go to calendar")
+        log_note("Going to calendar")
         page.get_by_role("link", name="Calendar").click()
+        user_sleep()
 
         #CREATE
         log_note("Create event")
@@ -41,25 +41,24 @@ def run(playwright: Playwright, browser_name: str, headless=False) -> None:
         page.get_by_role("button", name="New event").click()
         page.get_by_placeholder("Event title").fill(event_name)
         page.get_by_role("button", name="Save").click()
-        log_note("Event created")
+        user_sleep()
 
+        log_note("Checking if event was correctly saved")
         expect(page.get_by_text(event_name, exact=True)).to_be_visible()
         event_title_locator = page.locator(f'a.fc-event div.fc-event-title', has_text=event_name)
         expect(event_title_locator).to_have_count(1)
-
-        sleep(SLEEP_TIME)
+        user_sleep()
 
         # EDIT
-        log_note("Modify event")
+        log_note("Modify event - Clicking edit form")
         page.get_by_text(event_name, exact=True).click()
-
-
         popover_locator = page.locator('div.event-popover[aria-hidden="false"]')
         expect(popover_locator).to_be_visible()
-
         edit_button = popover_locator.locator('button:has-text("Edit")')
         edit_button.click()
+        user_sleep()
 
+        log_note('Typing in new detail text')
         title_input = popover_locator.locator('input[placeholder="Event title"]')
         expect(title_input).to_be_visible()
         expect(title_input).to_be_enabled()
@@ -68,16 +67,17 @@ def run(playwright: Playwright, browser_name: str, headless=False) -> None:
 
         update_button = popover_locator.locator('button:has-text("Update")')
         update_button.click()
+        user_sleep()
 
+        log_note('Validating if new text was saved')
         updated_event_title_locator = page.locator(f'a.fc-event div.fc-event-title', has_text=new_event_name)
         expect(updated_event_title_locator).to_have_text(new_event_name)
         expect(updated_event_title_locator).to_have_count(1)
+        user_sleep()
 
-        sleep(SLEEP_TIME)
 
         # DELETE
-        log_note("Delete the event")
-
+        log_note("Delete the event - Opening delete popup")
         actions_button = popover_locator.locator('button[aria-label="Actions"]')
         expect(actions_button).to_be_visible()
         actions_button.click()
@@ -87,14 +87,16 @@ def run(playwright: Playwright, browser_name: str, headless=False) -> None:
         menu_selector = f'ul#{menu_id}[role="menu"]'
         menu_locator = page.locator(menu_selector)
         expect(menu_locator).to_be_visible()
+        user_sleep()
 
-
+        log_note("Delete the event - Clicking delete")
         delete_button = menu_locator.locator('button.action-button:has-text("Delete")')
         expect(delete_button).to_be_visible()
         delete_button.click()
 
+        log_note('Validating event was deleted')
         expect(updated_event_title_locator).to_have_count(0)
-        sleep(SLEEP_TIME)
+        user_sleep()
 
         page.close()
         log_note("Close browser")

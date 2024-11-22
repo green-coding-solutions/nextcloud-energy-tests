@@ -3,7 +3,7 @@ import signal
 from time import time_ns
 from playwright.sync_api import sync_playwright
 
-from helpers.helper_functions import log_note, get_random_text, login_nextcloud, close_modal, timeout_handler
+from helpers.helper_functions import log_note, timeout_handler
 
 def main(browser_name: str = "firefox", headless=False):
     with sync_playwright() as playwright:
@@ -13,8 +13,6 @@ def main(browser_name: str = "firefox", headless=False):
         if browser_name == "firefox":
             browser = playwright.firefox.launch(headless=headless)
         else:
-            # this leverages new headless mode by Chromium: https://developer.chrome.com/articles/new-headless/
-            # The mode is however ~40% slower: https://github.com/microsoft/playwright/issues/21216
             browser = playwright.chromium.launch(headless=headless,args=["--headless=new"])
         context = browser.new_context(ignore_https_errors=True)
         page = context.new_page()

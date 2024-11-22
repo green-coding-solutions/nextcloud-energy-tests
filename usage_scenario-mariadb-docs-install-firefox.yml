@@ -17,9 +17,28 @@ services:
        - /tmp/.X11-unix:/tmp/.X11-unix # for debugging in non-headless mode
     environment:
        DISPLAY: ":0" # for debugging in non-headless mode
-
+    log-stderr: true
+    log-stdout: true
+  db:
+    log-stderr: true
+    log-stdout: true
+  nc:
+    log-stderr: true
+    log-stdout: true
+  ncs:
+    log-stderr: true
+    log-stdout: true
 
 flow:
+  - name: Install Nextcloud
+    container: gcb-playwright
+    commands:
+      - type: console
+        command: python3 /tmp/repo/nextcloud_install.py firefox
+        note: Installing Nextcloud
+        read-notes-stdout: true
+        log-stdout: true
+        log-stderr: true
   - name: Create User
     container: gcb-playwright
     commands:

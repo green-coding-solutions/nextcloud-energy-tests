@@ -1,7 +1,7 @@
 ---
 name: Nextcloud - MariaDB - Talk - Firefox
-author: Danilo Jesic <danilo@green-coding.berlin>
-description: Installs the official Nextcloud image with a MariaDB and starts a Talk conversation. Uses a playwright script running Firefox to create an admin account, install the recommended apps and then create a Talk conversation where guest users will send each other random text.
+author: Didi Hoffmann <didi@green-coding.io>
+description: Text-Nachrichten senden mit der Talk app von Nextcloud. Es wird ein Konversation von einem User erstellt und dann via Link 5 weitere User hinzugefügt. Diese senden alle separat Nachrichten mit einer Länge von 50 Zeichen. Es wird validiert, dass die Nachrichten bei allen Parteien ankommen. Input wird mit 200ms delay zwischen den Tastenanschlägen simuliert.
 compose-file: !include compose-mariadb.yml
 
 sci:
@@ -9,21 +9,22 @@ sci:
 
 services:
   gcb-playwright:
-    image: greencoding/gcb_playwright:v12
+    image: greencoding/gcb_playwright:v14
     depends_on:
       nc:
         condition: service_healthy
-#    volumes:
-#       - /tmp/.X11-unix:/tmp/.X11-unix # for debugging in non-headless mode
+    volumes:
+       - /tmp/.X11-unix:/tmp/.X11-unix # for debugging in non-headless mode
     environment:
        DISPLAY: ":0" # for debugging in non-headless mode
+
 
 flow:
   - name: Talk conversation
     container: gcb-playwright
     commands:
       - type: console
-        command: python3 /tmp/repo/energy-tests/nextcloud_talk.py firefox
+        command: python3 /tmp/repo/nextcloud_talk.py firefox
         note: Starting conversation
         read-notes-stdout: true
         read-sci-stdout: true

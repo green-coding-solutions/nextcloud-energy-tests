@@ -12,8 +12,7 @@ def login_nextcloud(page, username='Crash', password='Override', domain='https:/
     page.locator('#password').press("Enter")
 
 
-def get_random_text() -> str:
-    size_in_bytes = 10
+def get_random_text(size_in_bytes)  -> str:
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(size_in_bytes))
 
@@ -30,3 +29,6 @@ def close_modal(page) -> None:
 
 def timeout_handler(signum, frame):
     raise TimeoutError("Page.content() timed out")
+
+def user_sleep(delay=5):
+    sleep(delay)

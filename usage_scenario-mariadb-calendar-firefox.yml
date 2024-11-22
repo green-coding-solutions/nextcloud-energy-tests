@@ -1,7 +1,7 @@
 ---
-name: Nextcloud - MariaDB - Install - Firefox
-author: Arne Tarara <arne@green-coding.io>
-description: Installs the official Nextcloud image with a MariaDB.
+name: Nextcloud - MariaDB - Calendar - Firefox
+author: Didi Hoffmann <didi@green-coding.io>
+description: Nextcloud login über das Web Interface. Erstellen eines neuen Kalender-Eintrag. Ändern des Kalender Eintrag. Löschen des Kalender Eintrag.
 compose-file: !include compose-mariadb.yml
 
 services:
@@ -17,12 +17,13 @@ services:
 
 
 flow:
-  - name: Install Nextcloud
+  - name: Calendar
     container: gcb-playwright
     commands:
       - type: console
-        command: python3 /tmp/repo/nextcloud_install.py firefox
-        note: Installing Nextcloud
+        command: python3 /tmp/repo/nextcloud_calendar.py firefox
+        note: Creating event
         read-notes-stdout: true
+        read-sci-stdout: true
         log-stdout: true
         log-stderr: true

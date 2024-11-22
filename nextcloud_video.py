@@ -9,20 +9,18 @@ from multiprocessing import Pool
 
 from playwright.sync_api import Playwright, sync_playwright, expect
 
-from helpers.helper_functions import log_note, get_random_text, login_nextcloud, close_modal, timeout_handler
+from helpers.helper_functions import log_note, login_nextcloud, close_modal, timeout_handler, user_sleep
 
 DOMAIN = 'https://ncs'
-#DOMAIN = 'http://localhost:8080'
 
-SLEEP_TIME = 1
 CHAT_SESSIONS = 2
-CHAT_TIME_SEC = 10
+CHAT_TIME_SEC = 60
 
-def join(browser_name: str, download_url:str ,headless=False ) -> None:
+def join(browser_name: str, download_url:str) -> None:
     with sync_playwright() as playwright:
         log_note(f"Launching join browser {browser_name}")
         if browser_name == "firefox":
-            browser = playwright.firefox.launch(headless=headless,
+            browser = playwright.firefox.launch(headless=False,
                                                 firefox_user_prefs = {
                                                     "media.navigator.streams.fake": True,
                                                     "media.navigator.permission.disabled": True
@@ -30,9 +28,7 @@ def join(browser_name: str, download_url:str ,headless=False ) -> None:
                                                 args=['-width', '1280', '-height', '720']
                                             )
         else:
-            # this leverages new headless mode by Chromium: https://developer.chrome.com/articles/new-headless/
-            # The mode is however ~40% slower: https://github.com/microsoft/playwright/issues/21216
-            browser = playwright.chromium.launch(headless=headless,args=["--headless=new"])
+            browser = playwright.chromium.launch(headless=False)
 
         context = browser.new_context(
             ignore_https_errors=True,
@@ -41,31 +37,28 @@ def join(browser_name: str, download_url:str ,headless=False ) -> None:
         page = context.new_page()
 
         try:
-
+            log_note('Opening call link with participant')
             page.goto(download_url)
+            user_sleep()
 
-            sleep(SLEEP_TIME)
-
+            log_note('Setting name and requesting to join')
             guest_name = "Guest " + ''.join(random.choices(string.ascii_letters, k=5))
             page.get_by_placeholder('Guest').fill(guest_name)
-
             page.get_by_role('button', name="Submit name and join").click()
-
             page.locator('.message-main').get_by_role("button", name="Join call").click()
-
-
             page.locator('.media-settings__call-buttons').get_by_role("button", name="Join call").click()
-
             log_note(f"{guest_name} joined the chat")
+            user_sleep()
 
+            log_note(f"Staying the chat and calling for {CHAT_TIME_SEC}s")
             sleep(CHAT_TIME_SEC)
 
+            log_note('Leaving call with participant')
             page.get_by_role("button", name="Leave call").click()
-
-            sleep(SLEEP_TIME)
+            user_sleep()
 
             page.close()
-            log_note("Close download browser")
+            log_note("Close participant browser")
 
         except Exception as e:
             if hasattr(e, 'message'): # only Playwright error class has this member
@@ -83,10 +76,10 @@ def join(browser_name: str, download_url:str ,headless=False ) -> None:
         context.close()
         browser.close()
 
-def run(playwright: Playwright, browser_name: str, headless=False) -> None:
+def run(playwright: Playwright, browser_name: str) -> None:
     log_note(f"Launch browser {browser_name}")
     if browser_name == "firefox":
-        browser = playwright.firefox.launch(headless=headless,
+        browser = playwright.firefox.launch(headless=False,
                                             firefox_user_prefs = {
                                                 "media.navigator.streams.fake": True,
                                                 "media.navigator.permission.disabled": True
@@ -94,9 +87,7 @@ def run(playwright: Playwright, browser_name: str, headless=False) -> None:
                                             args=['-width', '1280', '-height', '720']
                                         )
     else:
-        # this leverages new headless mode by Chromium: https://developer.chrome.com/articles/new-headless/
-        # The mode is however ~40% slower: https://github.com/microsoft/playwright/issues/21216
-        browser = playwright.chromium.launch(headless=headless,args=["--headless=new"])
+        browser = playwright.chromium.launch(headless=False)
 
     context = browser.new_context(
         ignore_https_errors=True,
@@ -105,63 +96,53 @@ def run(playwright: Playwright, browser_name: str, headless=False) -> None:
     page = context.new_page()
 
     try:
+        log_note("Opening login page")
         page.goto(f"{DOMAIN}/login")
-        log_note("Login")
+
+        log_note("Logging in")
         login_nextcloud(page, domain=DOMAIN)
+        user_sleep()
 
-        log_note("Wait for welcome popup")
-        #close_modal(page)
+        # Wait for the modal to load. As it seems you can't close it while it is showing the opening animation.
+        log_note("Close first-time run popup")
+        close_modal(page)
 
-        log_note("Go to Talk")
+        log_note("Go to Talk app")
         page.locator('#header a[title=Talk]').click()
         page.wait_for_url("**/apps/spreed/")
-
-        sleep(SLEEP_TIME)
+        user_sleep()
 
         log_note("Start new chat session")
-
         page.locator('button.action-item__menutoggle:has(.chat-plus-icon)').click()
-
         page.locator('button.action-button.button-vue.focusable:has-text("Create a new conversation")').click()
-
         chat_name = "Chat " + ''.join(random.choices(string.ascii_letters, k=5))
         page.get_by_placeholder('Enter a name for this conversation').fill(chat_name)
-
         page.locator(f'text="Allow guests to join via link"').click()
-
-        sleep(SLEEP_TIME)
-
         page.get_by_role("button", name="Create conversation").click()
+        user_sleep()
 
+        log_note('Copying conversation link')
         page.get_by_role("button", name="Copy conversation link").click()
 
-        sleep(SLEEP_TIME)
-
         page.locator('.modal-container').locator('.empty-content__action').get_by_role('button', name="Close").click()
-
         link_url = page.evaluate('navigator.clipboard.readText()')
-
         log_note(f"Chat url is: {link_url}")
+        user_sleep()
 
-        sleep(SLEEP_TIME)
-
+        log_note('Starting the call')
         page.get_by_role("button", name="Start call").click()
-
         page.locator('.media-settings__call-buttons').get_by_role("button", name="Start call").click()
-
-        sleep(SLEEP_TIME)
+        user_sleep()
 
         log_note(f"Starting {CHAT_SESSIONS} Chat clients")
-
-        args = [(browser_name, link_url, headless) for _ in range(CHAT_SESSIONS)]
+        args = [(browser_name, link_url) for _ in range(CHAT_SESSIONS)]
         with Pool(processes=CHAT_SESSIONS) as pool:
             pool.starmap(join, args)
 
+        log_note('Leaving the call with the host')
         page.get_by_role("button", name="Leave call").click()
         page.get_by_role('menuitem', name='Leave call').click()
-
-        sleep(SLEEP_TIME)
-
+        user_sleep()
 
         page.close()
         log_note("Close browser")

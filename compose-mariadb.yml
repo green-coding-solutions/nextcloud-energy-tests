@@ -4,7 +4,7 @@ volumes:
 
 services:
   db:
-    image: mariadb:11.5.2-jammy
+    image: mariadb:11.5.2-noble
     restart: always
     command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
     volumes:

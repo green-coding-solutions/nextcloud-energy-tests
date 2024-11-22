@@ -8,28 +8,22 @@ import string
 
 from playwright.sync_api import Playwright, sync_playwright, expect
 
-from helpers.helper_functions import log_note, get_random_text, login_nextcloud, close_modal, timeout_handler
+from helpers.helper_functions import log_note, get_random_text, login_nextcloud, close_modal, timeout_handler, user_sleep
 
 DOMAIN = 'https://ncs'
-#DOMAIN = 'http://localhost:8080'
 
-SLEEP_TIME = 1
+FILE_PATH = '/tmp/repo/1mb.txt'
 
-FILE_PATH = '/tmp/repo/energy-tests/1mb.txt'
-#FILE_PATH = '1mb.txt'
-
-def download(playwright: Playwright, browser_name: str, download_url:str ,headless=False ) -> None:
+def download(playwright: Playwright, browser_name: str, download_url:str) -> None:
     log_note(f"Launch download browser {browser_name}")
 
     download_path = os.path.join(os.getcwd(), 'downloads')
     os.makedirs(download_path, exist_ok=True)
 
     if browser_name == "firefox":
-        browser = playwright.firefox.launch(headless=headless, downloads_path=download_path)
+        browser = playwright.firefox.launch(headless=False, downloads_path=download_path)
     else:
-        # this leverages new headless mode by Chromium: https://developer.chrome.com/articles/new-headless/
-        # The mode is however ~40% slower: https://github.com/microsoft/playwright/issues/21216
-        browser = playwright.chromium.launch(headless=headless,args=["--headless=new"])
+        browser = playwright.chromium.launch(headless=False)
 
 
     context = browser.new_context(accept_downloads=True, ignore_https_errors=True)
@@ -37,9 +31,12 @@ def download(playwright: Playwright, browser_name: str, download_url:str ,headle
 
     try:
 
+        log_note('Opening shared link')
         page.goto(download_url)
+        user_sleep()
 
-        download_url = page.locator("#downloadFile").get_attribute("href")
+        log_note('Clicking download link')
+        download_url = page.locator("#header-primary-action a.primary.button").get_attribute("href")
 
         with page.expect_download() as download_info:
             page.evaluate(f"window.location.href = '{download_url}'")
@@ -57,8 +54,9 @@ def download(playwright: Playwright, browser_name: str, download_url:str ,headle
                 raise ValueError(f"File not the right size")
         else:
             raise FileNotFoundError(f"File download failed")
+        user_sleep()
 
-        log_note('Download worked ok')
+        log_note('Download finished')
 
         page.close()
         log_note("Close download browser")
@@ -82,30 +80,31 @@ def download(playwright: Playwright, browser_name: str, download_url:str ,headle
 def run(playwright: Playwright, browser_name: str, headless=False) -> None:
     log_note(f"Launch browser {browser_name}")
     if browser_name == "firefox":
-        browser = playwright.firefox.launch(headless=headless)
+        browser = playwright.firefox.launch(headless=False)
     else:
-        # this leverages new headless mode by Chromium: https://developer.chrome.com/articles/new-headless/
-        # The mode is however ~40% slower: https://github.com/microsoft/playwright/issues/21216
-        browser = playwright.chromium.launch(headless=headless,args=["--headless=new"])
+        browser = playwright.chromium.launch(headless=False)
     context = browser.new_context(ignore_https_errors=True)
     page = context.new_page()
 
     try:
+        log_note("Opening login page")
         page.goto(f"{DOMAIN}/login")
-        log_note("Login")
-        login_nextcloud(page, domain=DOMAIN)
 
-        log_note("Wait for welcome popup")
+        log_note("Logging in")
+        login_nextcloud(page, domain=DOMAIN)
+        user_sleep()
+
+        # Wait for the modal to load. As it seems you can't close it while it is showing the opening animation.
+        log_note("Close first-time run popup")
         close_modal(page)
 
         log_note("Go to Files")
         page.get_by_role("link", name="Files").click()
-
-        sleep(SLEEP_TIME)
+        user_sleep()
 
         log_note("Upload File")
-
         page.get_by_role("button", name="New").click()
+        user_sleep()
 
         div_selector = 'div.v-popper__wrapper:has(ul[role="menu"])'
         page.wait_for_selector(div_selector, state='visible')
@@ -126,26 +125,35 @@ def run(playwright: Playwright, browser_name: str, headless=False) -> None:
 
         file_chooser = fc_info.value
         file_chooser.set_files(file_payload)
+        user_sleep()
 
+        log_note('Validate file upload')
         updated_file_locator = page.locator(f'tr[data-cy-files-list-row-name="{file_name}"]')
         expect(updated_file_locator).to_have_count(1)
+        user_sleep()
 
         # SHARE
-        log_note("Share File")
-
+        log_note("Get file share link")
         updated_file_locator.locator('button[data-cy-files-list-row-action="sharing-status"]').click()
-
         page.locator('button.new-share-link').click()
 
         toast_selector = 'div.toastify.toast-success:has-text("Link copied")'
         page.wait_for_selector(toast_selector)
+        user_sleep()
 
+        log_note('Validate share link and go to home')
         link_url = page.evaluate('navigator.clipboard.readText()')
-        log_note(f"Download url is: {link_url}")
+        log_note(f"Download link is: {link_url}")
+        page.goto(f"{DOMAIN}")
+        user_sleep()
 
-        sleep(SLEEP_TIME)
+        download(playwright, browser_name, link_url)
 
-        download(playwright, browser_name, link_url, headless)
+        log_note('Delete file')
+        page.get_by_role("link", name="Files").click()
+        page.locator(f'tr[data-cy-files-list-row-name="{file_name}"] button[aria-label="Actions"]').click()
+        page.locator(f'li[data-cy-files-list-row-action="delete"] button').click()
+        user_sleep()
 
         page.close()
         log_note("Close browser")
