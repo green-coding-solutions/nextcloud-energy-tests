@@ -13,7 +13,7 @@ def create_user(playwright: Playwright, browser_name: str, username: str, passwo
     if browser_name == "firefox":
         browser = playwright.firefox.launch(headless=False)
     else:
-        browser = playwright.chromium.launch(headless=False)
+        browser = playwright.chromium.launch(headless=False, args=['--disable-gpu', '--disable-software-rasterizer', '--ozone-platform=wayland'])
     context = browser.new_context(ignore_https_errors=True)
     try:
         page = context.new_page()

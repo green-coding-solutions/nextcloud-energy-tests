@@ -28,7 +28,7 @@ def join(browser_name: str, download_url:str) -> None:
                                                 args=['-width', '1280', '-height', '720']
                                             )
         else:
-            browser = playwright.chromium.launch(headless=False)
+            browser = playwright.chromium.launch(headless=False, args=['--disable-gpu', '--disable-software-rasterizer', '--ozone-platform=wayland', '--window-size=1280,720'])
 
         context = browser.new_context(
             ignore_https_errors=True,
@@ -87,7 +87,7 @@ def run(playwright: Playwright, browser_name: str) -> None:
                                             args=['-width', '1280', '-height', '720']
                                         )
     else:
-        browser = playwright.chromium.launch(headless=False)
+        browser = playwright.chromium.launch(headless=False, args=['--disable-gpu', '--disable-software-rasterizer', '--ozone-platform=wayland', '--window-size=1280,720'])
 
     context = browser.new_context(
         ignore_https_errors=True,

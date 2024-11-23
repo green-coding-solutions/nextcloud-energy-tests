@@ -1,5 +1,5 @@
 ---
-name: Nextcloud - MariaDB - Files - Firefox
+name: Nextcloud - MariaDB - Files - Chromium
 author: Didi Hoffmann <didi@green-coding.io>
 description: Nextcloud login über das Web Interface. Erstellen einer neuen Datei. Erstellen eines Sharing Link für die Datei mit 1 MB. Teilen der Datei und Download mit einem anderen Browser.
 compose-file: !include compose-mariadb.yml
@@ -11,20 +11,10 @@ services:
       nc:
         condition: service_healthy
     volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix # for debugging in non-headless mode
+      - /run/user/1000/wayland-0:/run/user/1000/wayland-0 # for debugging in non-headless mode
     environment:
        DISPLAY: ":0" # for debugging in non-headless mode
-    log-stderr: true
-    log-stdout: true
-  db:
-    log-stderr: true
-    log-stdout: true
-  nc:
-    log-stderr: true
-    log-stdout: true
-  ncs:
-    log-stderr: true
-    log-stdout: true
+       XDG_RUNTIME_DIR: "/run/user/1000"
 
 flow:
   - name: File Sharing

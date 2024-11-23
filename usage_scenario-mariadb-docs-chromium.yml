@@ -1,0 +1,62 @@
+---
+name: Nextcloud - MariaDB - Docs - Chromium
+author: Didi Hoffmann <didi@green-coding.io>
+description: Es wird ein weiterer Nutzer erstellt. Danach wird ein leeres Markdown Dokument erstellt und mit diesem Nutzer geteilt. Beide Nutzer greifen dann simultan auf das Dokument zu und editieren es kollaborativ. Jeder Nutzer fügt abwechselnd 50 Zeichen zu dem Dokument hinzu und es wird geguckt, dass dies auch bei den anderen Nutzern ankommt. Die Eingabe wird pro Zeichen mit 200ms delay simuliert.
+compose-file: !include compose-mariadb.yml
+
+sci:
+  R_d: collaborative edit
+
+services:
+  gcb-playwright:
+    image: greencoding/gcb_playwright:v14
+    depends_on:
+      nc:
+        condition: service_healthy
+    volumes:
+      - /run/user/1000/wayland-0:/run/user/1000/wayland-0 # for debugging in non-headless mode
+    environment:
+       DISPLAY: ":0" # for debugging in non-headless mode
+       XDG_RUNTIME_DIR: "/run/user/1000"
+
+
+flow:
+  - name: Create User
+    container: gcb-playwright
+    commands:
+      - type: console
+        command: python3 /tmp/repo/nextcloud_docs_create_user.py chromium
+        note: Create user
+        read-notes-stdout: true
+        log-stdout: true
+        log-stderr: true
+  - name: Create doc and share
+    container: gcb-playwright
+    commands:
+      - type: console
+        command: python3 /tmp/repo/nextcloud_docs_create_doc_and_share.py chromium
+        note: Create document and share
+        read-notes-stdout: true
+        log-stdout: true
+        log-stderr: true
+  - name: Collaborate
+    container: gcb-playwright
+    commands:
+      - type: console
+        command: python3 /tmp/repo/nextcloud_docs_collaboration.py chromium
+        note: dev
+        read-notes-stdout: true
+        read-sci-stdout: true
+        log-stdout: true
+        log-stderr: true
+  - name: Delete user and doc
+    container: gcb-playwright
+    commands:
+      - type: console
+        command: python3 /tmp/repo/nextcloud_docs_delete_user_and_doc.py chromium
+        note: dev
+        read-notes-stdout: true
+        read-sci-stdout: true
+        log-stdout: true
+        log-stderr: true
+

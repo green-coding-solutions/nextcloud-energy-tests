@@ -27,7 +27,7 @@ def create_conversation(playwright: Playwright, browser_name: str) -> str:
     if browser_name == "firefox":
         browser = playwright.firefox.launch(headless=False)
     else:
-        browser = playwright.chromium.launch(headless=False)
+        browser = playwright.chromium.launch(headless=False, args=['--disable-gpu', '--disable-software-rasterizer', '--ozone-platform=wayland'])
     context = browser.new_context(ignore_https_errors=True)
     page = context.new_page()
     try:
@@ -87,7 +87,7 @@ def talk(playwright: Playwright, url: str, browser_name: str) -> None:
     if browser_name == "firefox":
         browsers = [playwright.firefox.launch(headless=False) for _ in range(TALK_INVITEE_COUNT)]
     else:
-        browsers = [playwright.chromium.launch(headless=False) for _ in range(TALK_INVITEE_COUNT)]
+        browsers = [playwright.chromium.launch(headless=False, args=['--disable-gpu', '--disable-software-rasterizer', '--ozone-platform=wayland']) for _ in range(TALK_INVITEE_COUNT)]
     contexts = [browser.new_context(ignore_https_errors=True) for browser in browsers]
     pages = [context.new_page() for context in contexts]
 

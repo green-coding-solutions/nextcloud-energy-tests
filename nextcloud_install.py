@@ -13,7 +13,7 @@ def main(browser_name: str = "firefox", headless=False):
         if browser_name == "firefox":
             browser = playwright.firefox.launch(headless=headless)
         else:
-            browser = playwright.chromium.launch(headless=headless,args=["--headless=new"])
+            browser = playwright.chromium.launch(headless=False, args=['--disable-gpu', '--disable-software-rasterizer', '--ozone-platform=wayland'])
         context = browser.new_context(ignore_https_errors=True)
         page = context.new_page()
         signal.alarm(0) # remove timeout signal
