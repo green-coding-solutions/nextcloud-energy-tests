@@ -24,7 +24,7 @@ def collaborate(playwright: Playwright, browser_name: str) -> None:
     if browser_name == "firefox":
         browser_two = playwright.firefox.launch(headless=False, args=['-width', '1280', '-height', '720'])
     else:
-        browser = playwright.chromium.launch(headless=False, args=['--disable-gpu', '--disable-software-rasterizer', '--ozone-platform=wayland', '--window-size=1280,720'])
+        browser_two = playwright.chromium.launch(headless=False, args=['--disable-gpu', '--disable-software-rasterizer', '--ozone-platform=wayland', '--window-size=1280,720'])
     context_two = browser_two.new_context(ignore_https_errors=True, viewport={'width': 1280, 'height': 720})
     docs_user_page = context_two.new_page()
 
