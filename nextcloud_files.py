@@ -82,7 +82,8 @@ def run(playwright: Playwright, browser_name: str, headless=False) -> None:
     if browser_name == "firefox":
         browser = playwright.firefox.launch(headless=False)
     else:
-        browser = playwright.chromium.launch(headless=False, downloads_path=download_path, args=['--disable-gpu', '--disable-software-rasterizer', '--ozone-platform=wayland'])    context = browser.new_context(ignore_https_errors=True)
+        browser = playwright.chromium.launch(headless=False, downloads_path=download_path, args=['--disable-gpu', '--disable-software-rasterizer', '--ozone-platform=wayland'])
+        context = browser.new_context(ignore_https_errors=True)
     page = context.new_page()
 
     try:
