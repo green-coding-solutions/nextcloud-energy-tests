@@ -39,6 +39,8 @@ def collaborate(playwright: Playwright, browser_name: str) -> None:
         log_note("Close first-time run popup")
         close_modal(docs_user_page)
 
+        ## TODO: If we are using Chromium with Wayland the test will flake here. Problem being is that Wayland does not render the hidden window somehow ....
+
         log_note("Opening shares menu with all users")
         admin_user_page.get_by_role("link", name="Files").click()
         docs_user_page.get_by_role("link", name="Files").click()
