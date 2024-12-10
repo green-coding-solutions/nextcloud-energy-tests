@@ -45,7 +45,7 @@ services:
   # We use the official way of doing things
   # https://github.com/docker-library/docs/blob/master/nextcloud/README.md#https---ssl-encryption
   ncs:
-    image: nginx
+    image: nginx:1.27.3-bookworm
     ports:
       - "443:443"
     volumes:
