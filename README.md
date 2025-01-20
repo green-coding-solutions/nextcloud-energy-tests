@@ -58,24 +58,12 @@ All scripts will start of with creating an admin account and installing the reco
 then each case diverges from that point.
 The cases are:
 
-- Contacts:
-  + TODO
-- Files:
-  + TODO
-- Calendar:
-  + TODO
-- Video:
-  + TODO
-- Docs:
-  + Login as admin and create a second user.
-  + Login as admin and create a text document and then share it with second user
-  + Login as both users, open the text document and edit it, making sure the other user sees the text entered
-  + Delete the document and the new user after
-- Talk:
-  + Login as admin and create a group chat, allowing guests to join via link
-  + Open the group conversation link in 5 browsers as guests
-  + Each guest sends a 20KB random text message and validates the other members have received it
-
+- Contacts: Nextcloud login via the web interface. Create a new contact entry. Edit the contact entry. Delete the contact entry.
+- Files: Nextcloud login via the web interface. Create a new file. Create a sharing link for the file with 1 MB. Share the file and download it with another browser.
+- Calendar: Nextcloud login via the web interface. Create a new calendar entry. Edit the calendar entry. Delete the calendar entry.
+- Video: Video conference with Nextcloud Talk app. First, a call is started from a browser and a sharing link is created. Then two participants join the call. The video conference is simulated via Firefox with a color-changing demo video and noise as audio.
+- Docs: Another user is created. Then an empty Markdown document is created and shared with this user. Both users then access the document simultaneously and edit it collaboratively. Each user takes turns adding 50 characters to the document and it is checked that this also reaches the other users. The input is simulated with a 200ms delay per character.
+- Talk: Send text messages with the Talk app from Nextcloud. A conversation is created by a user and then 5 other users are added via a link. They all send separate messages with a length of 50 characters. It is validated that the messages reach all parties. Input is simulated with a 200ms delay between keystrokes.
 
 ## Infrastructure - Apache / MariaDB
 
