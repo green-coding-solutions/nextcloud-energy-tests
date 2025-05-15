@@ -1,0 +1,44 @@
+services:
+  db:
+    image: mariadb:11.5.2-noble
+    restart: always
+    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
+    environment:
+      - MYSQL_ROOT_PASSWORD=TheGibson
+      - MYSQL_PASSWORD=TheGibson
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+
+  nc:
+    image: nextcloud:30.0.2-apache
+    #build: # The build takes currently ~ 30 minutes which is far too long for daily testing
+    #  context: ../29/fpm
+    #  dockerfile: Dockerfile
+    restart: always
+    ports:
+      - 8080:80
+    environment:
+      - MYSQL_PASSWORD=TheGibson
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_HOST=db
+      - NEXTCLOUD_TRUSTED_DOMAINS=ncs
+      - TRUSTED_PROXIES=ncs
+      - APACHE_DISABLE_REWRITE_IP=1
+      - OVERWRITEPROTOCOL=https
+    healthcheck:
+      test: curl --fail --silent -k https://ncs
+      interval: "1h" # effectively turns repeated healthchecks during runtime off
+      start_period: "60s"
+      start_interval: "1s"
+
+  # We use the official way of doing things
+  # https://github.com/docker-library/docs/blob/master/nextcloud/README.md#https---ssl-encryption
+  ncs:
+    image: nginx:1.27.3-bookworm
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx-proxy/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx-proxy/cert.crt:/etc/ssl/certs/cert.crt:ro
+      - ./nginx-proxy/cert.key:/etc/ssl/private/cert.key:ro
