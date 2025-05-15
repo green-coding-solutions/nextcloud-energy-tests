@@ -20,6 +20,8 @@ services:
     log-stderr: true
     log-stdout: true
   nc:
+    setup-commands:
+      command: rm /var/www/html/cron.php
     log-stderr: true
     log-stdout: true
   ncs:
