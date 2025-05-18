@@ -27,6 +27,13 @@ services:
     log-stdout: true
 
 flow:
+  - name: Remove Cron
+    container: nc
+    commands:
+      - type: console
+        command: rm /var/www/html/cron.php
+        note: Remove cronjobs
+
   - name: Install Nextcloud
     container: gcb-playwright
     commands:
@@ -36,6 +43,14 @@ flow:
         read-notes-stdout: true
         log-stdout: true
         log-stderr: true
+
+  - name: Remove Cron again
+    container: nc
+    commands:
+      - type: console
+        command: rm /var/www/html/cron.php
+        note: Remove cronjobs again
+
   - name: Calendar
     container: gcb-playwright
     commands:
